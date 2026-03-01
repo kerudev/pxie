@@ -1,21 +1,21 @@
 #include <stdio.h>
 
-#define RAYGUI_IMPLEMENTATION
-#include <raygui.h>
-
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
 
+#define RAYGUI_IMPLEMENTATION
+#include <raygui.h>
+
 #define CELL_SIZE 40
-#define GRID_CELLS 16
+#define GRID_CELLS 8
 #define GRID_SIZE GRID_CELLS * CELL_SIZE
 
-float r = 0;
-float g = 0;
-float b = 0;
+float r = 10;
+float g = 100;
+float b = 200;
 
-long map(long x, long in_min, long in_max, long out_min, long out_max) {
+float map(float x, float in_min, float in_max, float out_min, float out_max) {
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
@@ -24,15 +24,15 @@ void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
     snprintf(buf, sizeof(buf), "%d", (int)*ref);
 
     float width = map(*ref, 0.0f, 255.0f, 0.0f, rect.width);
-    
+
     GuiSliderBar(rect, name, buf, ref, 0.0f, 255.0f);
     DrawRectangle(rect.x, rect.y, width, rect.height, color);
 }
 
 void draw_rgb() {
-    draw_rgb_rect((Rectangle){16, 10, 140, 16}, "R", &r, RED);
-    draw_rgb_rect((Rectangle){16, 30, 140, 16}, "G", &g, GREEN);
-    draw_rgb_rect((Rectangle){16, 50, 140, 16}, "B", &b, BLUE);
+    draw_rgb_rect((Rectangle){ 16, 10, 140, 16 }, "R", &r, RED);
+    draw_rgb_rect((Rectangle){ 16, 30, 140, 16 }, "G", &g, GREEN);
+    draw_rgb_rect((Rectangle){ 16, 50, 140, 16 }, "B", &b, BLUE);
 }
 
 void draw_grid() {
@@ -41,6 +41,19 @@ void draw_grid() {
 
     float x_offset = (screen_w - GRID_SIZE) / 2;
     float y_offset = (screen_h - GRID_SIZE) / 2;
+
+    // Paint each cell
+    for (int i = 0; i < GRID_CELLS; i++) {
+        for (int j = 0; j < GRID_CELLS; j++) {
+            DrawRectangle(
+                CELL_SIZE * i + x_offset,
+                CELL_SIZE * j + y_offset,
+                CELL_SIZE,
+                CELL_SIZE,
+                WHITE
+            );
+        }
+    }
 
     for (int i = 0; i < GRID_CELLS + 1; i++) {
         float cell_length = CELL_SIZE * i;
@@ -51,7 +64,7 @@ void draw_grid() {
             (Vector2){ cell_length + x_offset, (float)GRID_SIZE + y_offset },  // Vector2 endPos
             LIGHTGRAY                                                          // Color color
         );
-        
+
         // Draw horizontal lines
         DrawLineV(
             (Vector2){ x_offset, cell_length + y_offset },                     // Vector2 startPos
@@ -60,26 +73,13 @@ void draw_grid() {
         );
     }
 
-    // Draw coordinates on each cell
-    for (int i = 0; i < GRID_CELLS; i++) {
-        for (int j = 0; j < GRID_CELLS; j++) {
-            DrawText(
-                TextFormat("[%i,%i]", i, j),    // const char *text
-                CELL_SIZE * i + 10 + x_offset,  // int posX
-                CELL_SIZE * j + 15 + y_offset,  // int posY
-                10,                             // int fontSize
-                LIGHTGRAY                       // Color color
-            );
-        }
-    }
-
     // Draw a reference circle
     DrawCircle(GRID_SIZE / 2 + x_offset, GRID_SIZE / 2 + y_offset, 4, MAROON);
 }
 
 int main(int argc, char *argv[]) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(800, 600, "pxie - Simple software for pixel art");
+    InitWindow(800, 600, "Simple software for pixel art");
 
     Camera2D camera = { 0 };
     camera.zoom = 1.0f;
