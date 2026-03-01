@@ -1,15 +1,41 @@
 #include <stdio.h>
 
+#define RAYGUI_IMPLEMENTATION
+#include <raygui.h>
+
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
-
 
 #define CELL_SIZE 40
 #define GRID_CELLS 16
 #define GRID_SIZE GRID_CELLS * CELL_SIZE
 
-void drawGrid() {
+float r = 0;
+float g = 0;
+float b = 0;
+
+long map(long x, long in_min, long in_max, long out_min, long out_max) {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%d", (int)*ref);
+
+    float width = map(*ref, 0.0f, 255.0f, 0.0f, rect.width);
+    
+    GuiSliderBar(rect, name, buf, ref, 0.0f, 255.0f);
+    DrawRectangle(rect.x, rect.y, width, rect.height, color);
+}
+
+void draw_rgb() {
+    draw_rgb_rect((Rectangle){16, 10, 140, 16}, "R", &r, RED);
+    draw_rgb_rect((Rectangle){16, 30, 140, 16}, "G", &g, GREEN);
+    draw_rgb_rect((Rectangle){16, 50, 140, 16}, "B", &b, BLUE);
+}
+
+void draw_grid() {
     int screen_w = GetScreenWidth();
     int screen_h = GetScreenHeight();
 
@@ -81,8 +107,7 @@ int main(int argc, char *argv[]) {
             // under the cursor to the screen space point under the cursor at any zoom
             camera.target = mouseWorldPos;
 
-            // Zoom increment
-            // Uses log scaling to provide consistent zoom speed
+            // Zoom increment (uses log scaling for consistent zoom speed)
             float scale = 0.2f*wheel;
             camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.125f, 64.0f);
         }
@@ -91,13 +116,13 @@ int main(int argc, char *argv[]) {
             ClearBackground(RAYWHITE);
 
             BeginMode2D(camera);
-                drawGrid();
+                draw_grid();
             EndMode2D();
 
             // Draw mouse reference
-            //Vector2 mousePos = GetWorldToScreen2D(GetMousePosition(), camera)
             DrawCircleV(GetMousePosition(), 4, DARKGRAY);
 
+            draw_rgb();
         EndDrawing();
     }
 
