@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 
 #include <raylib.h>
 #include <raymath.h>
@@ -11,22 +12,19 @@
 #define GRID_CELLS 8
 #define GRID_SIZE GRID_CELLS * CELL_SIZE
 
-float r = 10;
-float g = 100;
-float b = 200;
+Color Grid[GRID_SIZE] = { 0 };
 
-float map(float x, float in_min, float in_max, float out_min, float out_max) {
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
+float r = 0.0f;
+float g = 0.0f;
+float b = 0.0f;
 
 void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
-    char buf[8];
-    snprintf(buf, sizeof(buf), "%d", (int)*ref);
+    GuiSliderBar(rect, name, TextFormat("%d", (int)*ref), ref, 0.0f, 255.0f);
 
-    float width = map(*ref, 0.0f, 255.0f, 0.0f, rect.width);
+    Rectangle fill = rect;
+    fill.width = rect.width * (*ref / 255.0f);
 
-    GuiSliderBar(rect, name, buf, ref, 0.0f, 255.0f);
-    DrawRectangle(rect.x, rect.y, width, rect.height, color);
+    DrawRectangleRec(fill, color);
 }
 
 void draw_rgb() {
@@ -36,23 +34,32 @@ void draw_rgb() {
 }
 
 void draw_grid() {
-    int screen_w = GetScreenWidth();
-    int screen_h = GetScreenHeight();
-
-    float x_offset = (screen_w - GRID_SIZE) / 2;
-    float y_offset = (screen_h - GRID_SIZE) / 2;
+    float offset_x = (GetScreenWidth() - GRID_SIZE) / 2;
+    float offset_y = (GetScreenHeight() - GRID_SIZE) / 2;
 
     // Paint each cell
     for (int i = 0; i < GRID_CELLS; i++) {
         for (int j = 0; j < GRID_CELLS; j++) {
-            DrawRectangle(
-                CELL_SIZE * i + x_offset,
-                CELL_SIZE * j + y_offset,
-                CELL_SIZE,
-                CELL_SIZE,
+            DrawRectangleV(
+                (Vector2){ CELL_SIZE * i + offset_x, CELL_SIZE * j + offset_y },
+                (Vector2){ CELL_SIZE, CELL_SIZE },
                 WHITE
             );
         }
+    }
+
+    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        Vector2 mouse = GetMousePosition();
+
+        int coord_x = floorf(mouse.x - offset_x) / CELL_SIZE;
+        int coord_y = floorf(mouse.y - offset_y) / CELL_SIZE;
+
+        int cell_x = coord_x * CELL_SIZE + offset_x;
+        int cell_y = coord_y * CELL_SIZE + offset_y;
+
+        Color color = { r, g, b, 255 };
+
+        DrawRectangle(cell_x, cell_y, CELL_SIZE, CELL_SIZE, color);
     }
 
     for (int i = 0; i < GRID_CELLS + 1; i++) {
@@ -60,26 +67,28 @@ void draw_grid() {
 
         // Draw vertical lines
         DrawLineV(
-            (Vector2){ cell_length + x_offset, y_offset },                     // Vector2 startPos
-            (Vector2){ cell_length + x_offset, (float)GRID_SIZE + y_offset },  // Vector2 endPos
+            (Vector2){ cell_length + offset_x, offset_y },                     // Vector2 startPos
+            (Vector2){ cell_length + offset_x, (float)GRID_SIZE + offset_y },  // Vector2 endPos
             LIGHTGRAY                                                          // Color color
         );
 
         // Draw horizontal lines
         DrawLineV(
-            (Vector2){ x_offset, cell_length + y_offset },                     // Vector2 startPos
-            (Vector2){ (float)GRID_SIZE + x_offset, cell_length + y_offset },  // Vector2 endPos
+            (Vector2){ offset_x, cell_length + offset_y },                     // Vector2 startPos
+            (Vector2){ (float)GRID_SIZE + offset_x, cell_length + offset_y },  // Vector2 endPos
             LIGHTGRAY                                                          // Color color
         );
     }
 
     // Draw a reference circle
-    DrawCircle(GRID_SIZE / 2 + x_offset, GRID_SIZE / 2 + y_offset, 4, MAROON);
+    DrawCircle(GRID_SIZE / 2 + offset_x, GRID_SIZE / 2 + offset_y, 4, MAROON);
 }
 
 int main(int argc, char *argv[]) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+
     InitWindow(800, 600, "Simple software for pixel art");
+    HideCursor();
 
     Camera2D camera = { 0 };
     camera.zoom = 1.0f;
@@ -88,7 +97,7 @@ int main(int argc, char *argv[]) {
 
     while (!WindowShouldClose()) {
         // Move camera on mouse right click
-        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
             Vector2 delta = GetMouseDelta();
             delta = Vector2Scale(delta, -1.0f / camera.zoom);
             camera.target = Vector2Add(camera.target, delta);
@@ -119,10 +128,10 @@ int main(int argc, char *argv[]) {
                 draw_grid();
             EndMode2D();
 
+            draw_rgb();
+
             // Draw mouse reference
             DrawCircleV(GetMousePosition(), 4, DARKGRAY);
-
-            draw_rgb();
         EndDrawing();
     }
 
