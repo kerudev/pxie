@@ -9,14 +9,22 @@
 #include <raygui.h>
 
 #define CELL_SIZE 40
-#define GRID_CELLS 8
-#define GRID_SIZE GRID_CELLS * CELL_SIZE
+#define GRID_COLS 8
+#define GRID_ROWS GRID_COLS
+#define GRID_CELLS GRID_COLS * GRID_ROWS
+#define GRID_SIZE GRID_COLS * CELL_SIZE
 
-Color Grid[GRID_SIZE] = { 0 };
+Color Grid[GRID_CELLS] = { 0 };
 
 float r = 0.0f;
 float g = 0.0f;
 float b = 0.0f;
+
+void init_grid() {
+    for (int cell = 0; cell < GRID_CELLS; cell++) {
+        Grid[cell] = WHITE;
+    }
+}
 
 void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
     GuiSliderBar(rect, name, TextFormat("%d", (int)*ref), ref, 0.0f, 255.0f);
@@ -33,17 +41,17 @@ void draw_rgb() {
     draw_rgb_rect((Rectangle){ 16, 50, 140, 16 }, "B", &b, BLUE);
 }
 
-void draw_grid() {
+void draw_grid(Camera2D camera) {
     float offset_x = (GetScreenWidth() - GRID_SIZE) / 2;
     float offset_y = (GetScreenHeight() - GRID_SIZE) / 2;
 
     // Paint each cell
-    for (int i = 0; i < GRID_CELLS; i++) {
-        for (int j = 0; j < GRID_CELLS; j++) {
+    for (int row = 0; row < GRID_ROWS; row++) {
+        for (int col = 0; col < GRID_COLS; col++) {
             DrawRectangleV(
-                (Vector2){ CELL_SIZE * i + offset_x, CELL_SIZE * j + offset_y },
+                (Vector2){ CELL_SIZE * row + offset_x, CELL_SIZE * col + offset_y },
                 (Vector2){ CELL_SIZE, CELL_SIZE },
-                WHITE
+                Grid[row * GRID_ROWS + col]
             );
         }
     }
@@ -60,10 +68,12 @@ void draw_grid() {
         Color color = { r, g, b, 255 };
 
         DrawRectangle(cell_x, cell_y, CELL_SIZE, CELL_SIZE, color);
+
+        Grid[coord_x * GRID_ROWS + coord_y] = color;
     }
 
-    for (int i = 0; i < GRID_CELLS + 1; i++) {
-        float cell_length = CELL_SIZE * i;
+    for (int cell = 0; cell < GRID_COLS + 1; cell++) {
+        float cell_length = cell * CELL_SIZE;
 
         // Draw vertical lines
         DrawLineV(
@@ -89,6 +99,8 @@ int main(int argc, char *argv[]) {
 
     InitWindow(800, 600, "Simple software for pixel art");
     HideCursor();
+
+    init_grid();
 
     Camera2D camera = { 0 };
     camera.zoom = 1.0f;
@@ -125,7 +137,7 @@ int main(int argc, char *argv[]) {
             ClearBackground(RAYWHITE);
 
             BeginMode2D(camera);
-                draw_grid();
+                draw_grid(camera);
             EndMode2D();
 
             draw_rgb();
