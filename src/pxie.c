@@ -19,8 +19,15 @@ typedef struct {
     float y;
 } ScreenOffset;
 
+typedef enum {
+    NORMAL = 0,
+    HIDDEN = 1,
+} Mode;
+
 Color Grid[GRID_CELLS] = { 0 };
+
 ScreenOffset offset = { 0 };
+Mode currentMode = 0;
 
 float r = 0.0f;
 float g = 0.0f;
@@ -60,6 +67,11 @@ void set_screen_offset() {
     offset.y = (GetScreenHeight() - GRID_SIZE) / 2;
 }
 
+void draw_mode_text() {
+    if (currentMode == NORMAL) DrawText("[ H ] Toggle UI (ON)", 10, 10, 14, BLACK);
+    if (currentMode == HIDDEN) DrawText("[ H ] Toggle UI (OFF)", 10, 10, 14, BLACK);
+}
+
 void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
     GuiSliderBar(rect, name, TextFormat("%d", (int)*ref), ref, 0.0f, 255.0f);
 
@@ -69,10 +81,19 @@ void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
     DrawRectangleRec(fill, color);
 }
 
+void draw_rgb_preview() {
+    Rectangle area = { 140, 40, 42, 42 };
+
+    DrawRectangleRec(area, (Color){ r, g, b, 255 });
+    DrawRectangleLinesEx(area, 2, BLACK);
+}
+
 void draw_rgb() {
-    draw_rgb_rect((Rectangle){ 16, 10, 140, 16 }, "R", &r, RED);
-    draw_rgb_rect((Rectangle){ 16, 30, 140, 16 }, "G", &g, GREEN);
-    draw_rgb_rect((Rectangle){ 16, 50, 140, 16 }, "B", &b, BLUE);
+    draw_rgb_rect((Rectangle){ 16, 40, 100, 12 }, "R", &r, RED);
+    draw_rgb_rect((Rectangle){ 16, 55, 100, 12 }, "G", &g, GREEN);
+    draw_rgb_rect((Rectangle){ 16, 70, 100, 12 }, "B", &b, BLUE);
+
+    draw_rgb_preview();
 }
 
 void draw_pixel(Camera2D camera) {
@@ -146,6 +167,8 @@ int main(int argc, char *argv[]) {
     while (!WindowShouldClose()) {
         set_screen_offset();
 
+        if (IsKeyPressed(KEY_H)) currentMode = !currentMode;
+
         // Move camera on mouse right click
         if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) move_camera(&camera);
 
@@ -158,7 +181,9 @@ int main(int argc, char *argv[]) {
                 draw_grid(camera);
             EndMode2D();
 
-            draw_rgb();
+            draw_mode_text();
+
+            if (currentMode == NORMAL) draw_rgb();
 
             // Draw mouse reference
             DrawCircleV(GetMousePosition(), 4, DARKGRAY);
