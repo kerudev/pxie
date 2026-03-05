@@ -67,6 +67,10 @@ void set_screen_offset() {
     offset.y = (GetScreenHeight() - GRID_SIZE) / 2;
 }
 
+Color get_current_color() {
+    return (Color){ r, g, b, 255 };
+}
+
 void draw_mode_text() {
     if (currentMode == NORMAL) DrawText("[ H ] Toggle UI (ON)", 10, 10, 14, BLACK);
     if (currentMode == HIDDEN) DrawText("[ H ] Toggle UI (OFF)", 10, 10, 14, BLACK);
@@ -84,16 +88,28 @@ void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
 void draw_rgb_preview() {
     Rectangle area = { 140, 40, 42, 42 };
 
-    DrawRectangleRec(area, (Color){ r, g, b, 255 });
+    DrawRectangleRec(area, get_current_color());
     DrawRectangleLinesEx(area, 2, BLACK);
 }
 
+void draw_rgb_as_text() {
+    unsigned int color = (unsigned int)(ColorToInt(get_current_color()));
+
+    // Right shift to remove alpha channel and display color as RGB
+    DrawText(TextFormat("HEX #%06X", color >> 8), 6, 95, 14, BLACK);
+
+    int copy_hex = GuiButton((Rectangle) { 115, 90, 20, 20 }, "#16#");
+
+    if (copy_hex) SetClipboardText(TextFormat("#%06X", color >> 8));
+}
+
 void draw_rgb() {
-    draw_rgb_rect((Rectangle){ 16, 40, 100, 12 }, "R", &r, RED);
-    draw_rgb_rect((Rectangle){ 16, 55, 100, 12 }, "G", &g, GREEN);
-    draw_rgb_rect((Rectangle){ 16, 70, 100, 12 }, "B", &b, BLUE);
+    draw_rgb_rect((Rectangle){ 16, 40, 110, 12 }, "R", &r, RED);
+    draw_rgb_rect((Rectangle){ 16, 55, 110, 12 }, "G", &g, GREEN);
+    draw_rgb_rect((Rectangle){ 16, 70, 110, 12 }, "B", &b, BLUE);
 
     draw_rgb_preview();
+    draw_rgb_as_text();
 }
 
 void draw_pixel(Camera2D camera) {
@@ -108,7 +124,7 @@ void draw_pixel(Camera2D camera) {
     int cell_x = coord_x * CELL_SIZE + offset.x;
     int cell_y = coord_y * CELL_SIZE + offset.y;
 
-    Color color = { r, g, b, 255 };
+    Color color = get_current_color();
 
     DrawRectangle(cell_x, cell_y, CELL_SIZE, CELL_SIZE, color);
 
