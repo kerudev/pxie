@@ -1,16 +1,20 @@
 #include <stdio.h>
 #include <math.h>
 
+#define RAYGUI_IMPLEMENTATION
+#include <raygui.h>
+
+#include <stb_image.h>
+#include <stb_image_write.h>
+
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
 
-#define RAYGUI_IMPLEMENTATION
-#include <raygui.h>
-
 #define CELL_SIZE 20
 #define GRID_COLS 16
 #define GRID_ROWS GRID_COLS
+
 #define GRID_CELLS GRID_COLS * GRID_ROWS
 #define GRID_SIZE GRID_COLS * CELL_SIZE
 
@@ -86,7 +90,7 @@ void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
 }
 
 void draw_rgb_preview() {
-    Rectangle area = { 140, 40, 42, 42 };
+    Rectangle area = { 150, 40, 40, 40 };
 
     DrawRectangleRec(area, get_current_color());
     DrawRectangleLinesEx(area, 2, BLACK);
@@ -94,13 +98,14 @@ void draw_rgb_preview() {
 
 void draw_rgb_as_text() {
     unsigned int color = (unsigned int)(ColorToInt(get_current_color()));
+    const char *formatted = TextFormat("#%06X", color >> 8);
 
     // Right shift to remove alpha channel and display color as RGB
-    DrawText(TextFormat("HEX #%06X", color >> 8), 6, 95, 14, BLACK);
+    DrawText(TextFormat("HEX %s", formatted), 6, 95, 14, BLACK);
 
     int copy_hex = GuiButton((Rectangle) { 115, 90, 20, 20 }, "#16#");
 
-    if (copy_hex) SetClipboardText(TextFormat("#%06X", color >> 8));
+    if (copy_hex) SetClipboardText(formatted);
 }
 
 void draw_rgb() {
@@ -113,8 +118,6 @@ void draw_rgb() {
 }
 
 void draw_pixel(Camera2D camera) {
-    Vector2 mouse = GetMousePosition();
-
     int coord_x = floorf(camera.target.x - offset.x) / CELL_SIZE;
     int coord_y = floorf(camera.target.y - offset.y) / CELL_SIZE;
 
@@ -167,6 +170,46 @@ void draw_grid(Camera2D camera) {
     DrawCircle(GRID_SIZE / 2 + offset.x, GRID_SIZE / 2 + offset.y, 4, MAROON);
 }
 
+void save_png() {
+    unsigned char image[GRID_SIZE * GRID_SIZE * STBI_rgb_alpha] = { 0 };
+
+    for (int row = 0; row < GRID_ROWS; row++) {
+        for (int col = 0; col < GRID_COLS; col++) {
+            Color color = Grid[row * GRID_COLS + col];
+
+            for (int cy = 0; cy < CELL_SIZE; cy++) {
+                for (int cx = 0; cx < CELL_SIZE; cx++) {
+                    int px = col * CELL_SIZE + cx;
+                    int py = row * CELL_SIZE + cy;
+
+                    int i = (py * GRID_SIZE + px) * STBI_rgb_alpha;
+
+                    image[i]     = color.r;
+                    image[i + 1] = color.g;
+                    image[i + 2] = color.b;
+                    image[i + 3] = color.a;
+                }
+            }
+        }
+    }
+
+    stbi_write_png("pixel_art.png", GRID_SIZE, GRID_SIZE, STBI_rgb_alpha, image, GRID_SIZE * STBI_rgb_alpha);
+}
+
+void draw_save_png_button() {
+    int w = GetScreenWidth();
+    Rectangle area = { w - 50, 40, 40, 40 };
+
+    int copy_png = GuiButton(area, "#16#");
+
+    if (copy_png) save_png();
+}
+
+void draw_ui() {
+    draw_rgb();
+    draw_save_png_button();
+}
+
 int main(int argc, char *argv[]) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
@@ -199,7 +242,7 @@ int main(int argc, char *argv[]) {
 
             draw_mode_text();
 
-            if (currentMode == NORMAL) draw_rgb();
+            if (currentMode == NORMAL) draw_ui();
 
             // Draw mouse reference
             DrawCircleV(GetMousePosition(), 4, DARKGRAY);
