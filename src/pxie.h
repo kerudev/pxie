@@ -22,14 +22,14 @@ typedef struct {
 } ScreenOffset;
 
 typedef enum {
-    NORMAL = 0,
-    HIDDEN = 1,
+    MODE_NORMAL = 0,
+    MODE_HIDDEN = 1,
 } Mode;
 
 Color Grid[GRID_CELLS] = { 0 };
 
 ScreenOffset offset = { 0 };
-Mode currentMode = NORMAL;
+Mode currentMode = MODE_NORMAL;
 
 float r = 0.0f;
 float g = 0.0f;
@@ -74,8 +74,8 @@ Color get_current_color() {
 }
 
 void draw_mode_text() {
-    if (currentMode == NORMAL) DrawText("[ H ] Toggle UI (ON)", 10, 10, 14, BLACK);
-    if (currentMode == HIDDEN) DrawText("[ H ] Toggle UI (OFF)", 10, 10, 14, BLACK);
+    if (currentMode == MODE_NORMAL) DrawText("[ H ] Toggle UI (ON)", 10, 10, 14, BLACK);
+    if (currentMode == MODE_HIDDEN) DrawText("[ H ] Toggle UI (OFF)", 10, 10, 14, BLACK);
 }
 
 void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
@@ -101,7 +101,7 @@ void draw_rgb_as_text() {
     // Right shift to remove alpha channel and display color as RGB
     DrawText(TextFormat("HEX %s", formatted), 6, 95, 14, BLACK);
 
-    int copy_hex = GuiButton((Rectangle) { 115, 90, 20, 20 }, "#16#");
+    int copy_hex = GuiButton((Rectangle){ 115, 90, 20, 20 }, "#16#");
 
     if (copy_hex) SetClipboardText(formatted);
 }
@@ -177,8 +177,8 @@ void save_png() {
 
             for (int cy = 0; cy < CELL_SIZE; cy++) {
                 for (int cx = 0; cx < CELL_SIZE; cx++) {
-                    int px = col * CELL_SIZE + cx;
-                    int py = row * CELL_SIZE + cy;
+                    int px = row * CELL_SIZE + cx;
+                    int py = col * CELL_SIZE + cy;
 
                     int i = (py * GRID_SIZE + px) * STBI_rgb_alpha;
 
@@ -198,7 +198,7 @@ void draw_save_png_button() {
     int w = GetScreenWidth();
     Rectangle area = { w - 50, 40, 40, 40 };
 
-    int copy_png = GuiButton(area, "#16#");
+    int copy_png = GuiButton(area, "#7#");
 
     if (copy_png) save_png();
 }

@@ -4,6 +4,7 @@ int main(int argc, char *argv[]) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
     InitWindow(800, 600, "Simple software for pixel art");
+    SetWindowMinSize(800, 600);
     HideCursor();
 
     init_grid();
@@ -32,10 +33,10 @@ int main(int argc, char *argv[]) {
 
             draw_mode_text();
 
-            if (currentMode == NORMAL) draw_ui();
+            if (currentMode == MODE_NORMAL) draw_ui();
 
             // Draw mouse reference
-            DrawCircleV(GetMousePosition(), 4, DARKGRAY);
+            if (IsCursorOnScreen()) DrawCircleV(GetMousePosition(), 4, DARKGRAY);
         EndDrawing();
     }
 
