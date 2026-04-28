@@ -29,9 +29,7 @@ int grid_size = 0;
 
 Color *grid = NULL;
 
-float r = 0.0f;
-float g = 0.0f;
-float b = 0.0f;
+Color color = { 0, 0, 0, 255 };
 
 ScreenOffset offset = { 0 };
 Mode currentMode = MODE_NORMAL;
@@ -64,17 +62,15 @@ void set_screen_offset() {
     offset.y = (GetScreenHeight() - grid_size) / 2;
 }
 
-Color get_current_color() {
-    return (Color){ r, g, b, 255 };
-}
-
 void draw_mode_text() {
     if (currentMode == MODE_NORMAL) DrawText("[ H ] Toggle UI (ON)", 10, 10, 14, BLACK);
     if (currentMode == MODE_HIDDEN) DrawText("[ H ] Toggle UI (OFF)", 10, 10, 14, BLACK);
 }
 
-void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
-    GuiSliderBar(rect, name, TextFormat("%d", (int)*ref), ref, 0.0f, 255.0f);
+void draw_rgb_rect(Rectangle rect, char *name, unsigned char *ref, Color color) {
+    float value = *ref;
+    GuiSliderBar(rect, name, TextFormat("%d", *ref), &value, 0.0f, 255.0f);
+    *ref = (unsigned char)value;
 
     Rectangle fill = rect;
     fill.width = rect.width * (*ref / 255.0f);
@@ -85,26 +81,24 @@ void draw_rgb_rect(Rectangle rect, char *name, float *ref, Color color) {
 void draw_rgb_preview() {
     Rectangle area = { 150, 40, 40, 40 };
 
-    DrawRectangleRec(area, get_current_color());
+    DrawRectangleRec(area, color);
     DrawRectangleLinesEx(area, 2, BLACK);
 }
 
 void draw_rgb_as_text() {
-    unsigned int color = (unsigned int)(ColorToInt(get_current_color()));
-    const char *formatted = TextFormat("#%06X", color >> 8);
-
     // Right shift to remove alpha channel and display color as RGB
+    const char *formatted = TextFormat("#%06X", (unsigned int)(ColorToInt(color)) >> 8);
+
     DrawText(TextFormat("HEX %s", formatted), 6, 95, 14, BLACK);
 
     int copy_hex = GuiButton((Rectangle){ 115, 90, 20, 20 }, "#16#");
-
     if (copy_hex) SetClipboardText(formatted);
 }
 
 void draw_rgb() {
-    draw_rgb_rect((Rectangle){ 16, 40, 110, 12 }, "R", &r, RED);
-    draw_rgb_rect((Rectangle){ 16, 55, 110, 12 }, "G", &g, GREEN);
-    draw_rgb_rect((Rectangle){ 16, 70, 110, 12 }, "B", &b, BLUE);
+    draw_rgb_rect((Rectangle){ 16, 40, 110, 12 }, "R", &color.r, RED);
+    draw_rgb_rect((Rectangle){ 16, 55, 110, 12 }, "G", &color.g, GREEN);
+    draw_rgb_rect((Rectangle){ 16, 70, 110, 12 }, "B", &color.b, BLUE);
 
     draw_rgb_preview();
     draw_rgb_as_text();
@@ -119,8 +113,6 @@ void draw_pixel(Camera2D camera) {
 
     int cell_x = coord_x * cell_size + offset.x;
     int cell_y = coord_y * cell_size + offset.y;
-
-    Color color = get_current_color();
 
     DrawRectangle(cell_x, cell_y, cell_size, cell_size, color);
 
