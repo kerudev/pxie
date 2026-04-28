@@ -9,13 +9,6 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#define CELL_SIZE 20
-#define GRID_COLS 16
-#define GRID_ROWS GRID_COLS
-
-#define GRID_CELLS GRID_COLS * GRID_ROWS
-#define GRID_SIZE GRID_COLS * CELL_SIZE
-
 typedef struct {
     float x;
     float y;
@@ -26,20 +19,22 @@ typedef enum {
     MODE_HIDDEN = 1,
 } Mode;
 
-Color Grid[GRID_CELLS] = { 0 };
+int cell_size = 20;
 
-ScreenOffset offset = { 0 };
-Mode currentMode = MODE_NORMAL;
+int grid_cols = 0;
+int grid_rows = 0;
+
+int grid_cells = 0;
+int grid_size = 0;
+
+Color *grid = NULL;
 
 float r = 0.0f;
 float g = 0.0f;
 float b = 0.0f;
 
-void init_grid() {
-    for (int cell = 0; cell < GRID_CELLS; cell++) {
-        Grid[cell] = WHITE;
-    }
-}
+ScreenOffset offset = { 0 };
+Mode currentMode = MODE_NORMAL;
 
 void move_camera(Camera2D *camera) {
     Vector2 delta = GetMouseDelta();
@@ -65,8 +60,8 @@ void update_camera_state(Camera2D *camera) {
 }
 
 void set_screen_offset() {
-    offset.x = (GetScreenWidth() - GRID_SIZE) / 2;
-    offset.y = (GetScreenHeight() - GRID_SIZE) / 2;
+    offset.x = (GetScreenWidth() - grid_size) / 2;
+    offset.y = (GetScreenHeight() - grid_size) / 2;
 }
 
 Color get_current_color() {
@@ -116,71 +111,71 @@ void draw_rgb() {
 }
 
 void draw_pixel(Camera2D camera) {
-    int coord_x = floorf(camera.target.x - offset.x) / CELL_SIZE;
-    int coord_y = floorf(camera.target.y - offset.y) / CELL_SIZE;
+    int coord_x = floorf(camera.target.x - offset.x) / cell_size;
+    int coord_y = floorf(camera.target.y - offset.y) / cell_size;
 
-    if (coord_x < 0 || coord_x >= GRID_COLS) return;
-    if (coord_y < 0 || coord_y >= GRID_ROWS) return;
+    if (coord_x < 0 || coord_x >= grid_cols) return;
+    if (coord_y < 0 || coord_y >= grid_rows) return;
 
-    int cell_x = coord_x * CELL_SIZE + offset.x;
-    int cell_y = coord_y * CELL_SIZE + offset.y;
+    int cell_x = coord_x * cell_size + offset.x;
+    int cell_y = coord_y * cell_size + offset.y;
 
     Color color = get_current_color();
 
-    DrawRectangle(cell_x, cell_y, CELL_SIZE, CELL_SIZE, color);
+    DrawRectangle(cell_x, cell_y, cell_size, cell_size, color);
 
-    Grid[coord_x * GRID_ROWS + coord_y] = color;
+    grid[coord_x * grid_rows + coord_y] = color;
 }
 
 void draw_grid(Camera2D camera) {
     // Paint each cell
-    for (int row = 0; row < GRID_ROWS; row++) {
-        for (int col = 0; col < GRID_COLS; col++) {
+    for (int row = 0; row < grid_rows; row++) {
+        for (int col = 0; col < grid_cols; col++) {
             DrawRectangleV(
-                (Vector2){ CELL_SIZE * row + offset.x, CELL_SIZE * col + offset.y },
-                (Vector2){ CELL_SIZE, CELL_SIZE },
-                Grid[row * GRID_ROWS + col]
+                (Vector2){ cell_size * row + offset.x, cell_size * col + offset.y },
+                (Vector2){ cell_size, cell_size },
+                grid[row * grid_rows + col]
             );
         }
     }
 
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) draw_pixel(camera);
 
-    for (int cell = 0; cell < GRID_COLS + 1; cell++) {
-        float cell_length = cell * CELL_SIZE;
+    for (int cell = 0; cell < grid_cols + 1; cell++) {
+        float cell_length = cell * cell_size;
 
         // Draw vertical lines
         DrawLineV(
             (Vector2){ cell_length + offset.x, offset.y },                     // Vector2 startPos
-            (Vector2){ cell_length + offset.x, (float)GRID_SIZE + offset.y },  // Vector2 endPos
+            (Vector2){ cell_length + offset.x, (float)grid_size + offset.y },  // Vector2 endPos
             LIGHTGRAY                                                          // Color color
         );
 
         // Draw horizontal lines
         DrawLineV(
             (Vector2){ offset.x, cell_length + offset.y },                     // Vector2 startPos
-            (Vector2){ (float)GRID_SIZE + offset.x, cell_length + offset.y },  // Vector2 endPos
+            (Vector2){ (float)grid_size + offset.x, cell_length + offset.y },  // Vector2 endPos
             LIGHTGRAY                                                          // Color color
         );
     }
 
     // Draw a reference circle
-    DrawCircle(GRID_SIZE / 2 + offset.x, GRID_SIZE / 2 + offset.y, 4, MAROON);
+    DrawCircle(grid_size / 2 + offset.x, grid_size / 2 + offset.y, 4, MAROON);
 }
 
 void save_png() {
-    unsigned char image[GRID_SIZE * GRID_SIZE * STBI_rgb_alpha] = { 0 };
+    unsigned char image[grid_size * grid_size * STBI_rgb_alpha];
 
-    for (int row = 0; row < GRID_ROWS; row++) {
-        for (int col = 0; col < GRID_COLS; col++) {
-            Color color = Grid[row * GRID_COLS + col];
+    for (int row = 0; row < grid_rows; row++) {
+        for (int col = 0; col < grid_cols; col++) {
+            Color color = grid[row * grid_cols + col];
 
-            for (int cy = 0; cy < CELL_SIZE; cy++) {
-                for (int cx = 0; cx < CELL_SIZE; cx++) {
-                    int px = row * CELL_SIZE + cx;
-                    int py = col * CELL_SIZE + cy;
+            for (int cy = 0; cy < cell_size; cy++) {
+                for (int cx = 0; cx < cell_size; cx++) {
+                    int px = row * cell_size + cx;
+                    int py = col * cell_size + cy;
 
-                    int i = (py * GRID_SIZE + px) * STBI_rgb_alpha;
+                    int i = (py * grid_size + px) * STBI_rgb_alpha;
 
                     image[i]     = color.r;
                     image[i + 1] = color.g;
@@ -191,7 +186,7 @@ void save_png() {
         }
     }
 
-    stbi_write_png("pixel_art.png", GRID_SIZE, GRID_SIZE, STBI_rgb_alpha, image, GRID_SIZE * STBI_rgb_alpha);
+    stbi_write_png("pixel_art.png", grid_size, grid_size, STBI_rgb_alpha, image, grid_size * STBI_rgb_alpha);
 }
 
 void draw_save_png_button() {
@@ -206,4 +201,54 @@ void draw_save_png_button() {
 void draw_ui() {
     draw_rgb();
     draw_save_png_button();
+}
+
+void draw_loop(int pixels) {
+    // Define global variables
+    grid_cols = pixels;
+    grid_rows = pixels;
+
+    grid_cells = grid_cols * grid_rows;
+    grid_size = grid_cols * cell_size;
+
+    grid = malloc(sizeof(Color) * grid_cells);
+    for (int cell = 0; cell < grid_cells; cell++) grid[cell] = WHITE;
+
+    Camera2D camera = { .zoom = 1.0f };
+
+    // Initialize drawing
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
+
+    InitWindow(800, 600, "Simple software for pixel art");
+    SetWindowMinSize(800, 600);
+    HideCursor();
+    SetTargetFPS(60);
+
+    while (!WindowShouldClose()) {
+        set_screen_offset();
+
+        if (IsKeyPressed(KEY_H)) currentMode = !currentMode;
+
+        // Move camera on mouse right click
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) move_camera(&camera);
+
+        update_camera_state(&camera);
+
+        BeginDrawing();
+            ClearBackground(RAYWHITE);
+
+            BeginMode2D(camera);
+                draw_grid(camera);
+            EndMode2D();
+
+            draw_mode_text();
+
+            if (currentMode == MODE_NORMAL) draw_ui();
+
+            // Draw mouse reference
+            if (IsCursorOnScreen()) DrawCircleV(GetMousePosition(), 4, DARKGRAY);
+        EndDrawing();
+    }
+
+    CloseWindow();
 }

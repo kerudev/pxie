@@ -1,46 +1,19 @@
+#define PARSEC_IMPLEMENTATION
+#include <parsec.h>
+
 #include "pxie.h"
 
 int main(int argc, char *argv[]) {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    parsec_init("pxie", "Pixel art software");
 
-    InitWindow(800, 600, "Simple software for pixel art");
-    SetWindowMinSize(800, 600);
-    HideCursor();
+    int *pixels = parsec_int_ref(
+        "-p", "--pixels", 20,
+        "Total of pixels per row and column"
+    );
 
-    init_grid();
+    parsec_parse(argc, argv);
 
-    Camera2D camera = { 0 };
-    camera.zoom = 1.0f;
-
-    SetTargetFPS(60);
-
-    while (!WindowShouldClose()) {
-        set_screen_offset();
-
-        if (IsKeyPressed(KEY_H)) currentMode = !currentMode;
-
-        // Move camera on mouse right click
-        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) move_camera(&camera);
-
-        update_camera_state(&camera);
-
-        BeginDrawing();
-            ClearBackground(RAYWHITE);
-
-            BeginMode2D(camera);
-                draw_grid(camera);
-            EndMode2D();
-
-            draw_mode_text();
-
-            if (currentMode == MODE_NORMAL) draw_ui();
-
-            // Draw mouse reference
-            if (IsCursorOnScreen()) DrawCircleV(GetMousePosition(), 4, DARKGRAY);
-        EndDrawing();
-    }
-
-    CloseWindow();
+    draw_loop(*pixels);
 
     return 0;
 }
